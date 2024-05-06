@@ -7,6 +7,10 @@ import torch
 from torch.distributions.categorical import Categorical
 import gym
 from gym import spaces
+
+import sys
+sys.path.append('/home/cak/enes/world-models-with-RL')
+
 from models.vae import VAE
 from models.mdrnn import MDRNNCell
 from utils.misc import LSIZE, RSIZE, RED_SIZE

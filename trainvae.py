@@ -42,6 +42,7 @@ torch.backends.cudnn.benchmark = True
 device = torch.device("cuda" if cuda else "cpu")
 
 
+# TODO: No normalization? Maybe env retuns values in [0, 1]?
 transform_train = transforms.Compose([
     transforms.ToPILImage(),
     transforms.Resize((RED_SIZE, RED_SIZE)),
@@ -83,6 +84,21 @@ def loss_function(recon_x, x, mu, logsigma):
     return BCE + KLD
 
 
+def save_reconstructed_images(original, recons, epoch_idx):
+    # save the original and recontructed images side by side
+    N=10
+    original_subset = original[:N]
+    recons_subset = recons.view(args.batch_size, 3, RED_SIZE, RED_SIZE)[:N]
+
+    comparison = torch.cat([original_subset, recons_subset])
+    
+    # CHECKME:  # maybe add 0.5 bc save_image expects image in [-0.5, +0.5]
+    save_image(comparison.cpu(),
+               join(args.logdir, 'reconstructed_' + str(epoch_idx) + '.png'), nrow=N)
+    
+    
+
+
 def train(epoch):
     """ One training epoch """
     model.train()
@@ -92,6 +108,7 @@ def train(epoch):
         data = data.to(device)
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
+        # save_reconstructed_images(data, recon_batch, epoch)
         loss = loss_function(recon_batch, data, mu, logvar)
         loss.backward()
         train_loss += loss.item()
@@ -168,9 +185,10 @@ for epoch in range(1, args.epochs + 1):
 
     if not args.nosamples:
         with torch.no_grad():
-            sample = torch.randn(RED_SIZE, LSIZE).to(device)
+            # FIXME: RED_SIZE hem bacth size hem de img size olarak kullanılmış
+            sample = torch.randn(RED_SIZE, LSIZE).to(device) # RED_SIZE = 64, LSIZE = 32, 
             sample = model.decoder(sample).cpu()
-            save_image(sample.view(64, 3, RED_SIZE, RED_SIZE),
+            save_image(sample.view(64, 3, RED_SIZE, RED_SIZE), # Buna gerek olmamalı?
                        join(vae_dir, 'samples/sample_' + str(epoch) + '.png'))
 
     if earlystopping.stop:

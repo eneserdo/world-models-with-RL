@@ -16,6 +16,7 @@ class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-publi
             for sd in listdir(root) if isdir(join(root, sd))
             for ssd in listdir(join(root, sd))]
 
+        # FIXME: no hardcoded train/test split
         if train:
             self._files = self._files[:-600]
         else:
