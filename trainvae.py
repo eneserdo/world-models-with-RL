@@ -31,7 +31,7 @@ parser.add_argument('--noreload', action='store_true',
 parser.add_argument('--nosamples', action='store_true',
                     help='Does not save samples during training if specified')
 
-parser.add_argument('--dataset_dir', type=str, help='Directory where results are logged')
+parser.add_argument('--dataset_dir', type=str, help='Directory where dataset is stored')
 
 args = parser.parse_args()
 cuda = torch.cuda.is_available()
