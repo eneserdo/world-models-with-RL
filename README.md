@@ -2,6 +2,15 @@
 
 A fork to train the world models with various RL algorithms and compare their performance on different gym environments.
 
+## Installation
+
+```
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install -c conda-forge swig
+pip install gymnasium[all]
+pip install -r requirements.txt
+```
+
 # Pytorch implementation of the "WorldModels"
 
 Paper: Ha and Schmidhuber, "World Models", 2018. https://doi.org/10.5281/zenodo.1207631. For a quick summary of the paper and some additional experiments, visit the [github page](https://ctallec.github.io/world-models/).
