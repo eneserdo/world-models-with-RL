@@ -27,6 +27,9 @@ def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
             a_rollout = [env.action_space.sample() for _ in range(seq_len)]
         elif noise_type == 'brown':
             a_rollout = sample_continuous_policy(env.action_space, seq_len, 1. / 50)
+        else:
+            # TODO: load a policy
+            raise NotImplementedError
 
         s_rollout = []
         r_rollout = []

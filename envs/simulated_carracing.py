@@ -5,8 +5,10 @@ import argparse
 from os.path import join, exists
 import torch
 from torch.distributions.categorical import Categorical
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
+
+
 
 import sys
 sys.path.append('/home/cak/enes/world-models-with-RL')

@@ -77,6 +77,14 @@ if exists(rnn_file) and not args.noreload:
 # Data Loading
 transform = transforms.Lambda(
     lambda x: np.transpose(x, (0, 3, 1, 2)) / 255)
+
+# transform = transforms.Compose([
+#     transform_,
+#     transforms.ToPILImage(),
+#     transforms.Resize((RED_SIZE, RED_SIZE)),
+#     transforms.ToTensor(),
+# ])
+
 train_loader = DataLoader(
     RolloutSequenceDataset(args.dataset_dir, SEQ_LEN, transform, buffer_size=30),
     batch_size=BSIZE, num_workers=8, shuffle=True)
