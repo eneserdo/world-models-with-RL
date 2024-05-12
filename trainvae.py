@@ -1,5 +1,6 @@
 """ Training VAE """
 import argparse
+import os
 from os.path import join, exists
 from os import mkdir
 
@@ -30,6 +31,7 @@ parser.add_argument('--noreload', action='store_true',
 parser.add_argument('--nosamples', action='store_true',
                     help='Does not save samples during training if specified')
 
+parser.add_argument('--dataset_dir', type=str, help='Directory where results are logged')
 
 args = parser.parse_args()
 cuda = torch.cuda.is_available()
@@ -56,9 +58,9 @@ transform_test = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-dataset_train = RolloutObservationDataset('datasets/carracing',
+dataset_train = RolloutObservationDataset(args.dataset_dir,
                                           transform_train, train=True)
-dataset_test = RolloutObservationDataset('datasets/carracing',
+dataset_test = RolloutObservationDataset(args.dataset_dir,
                                          transform_test, train=False)
 train_loader = torch.utils.data.DataLoader(
     dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=2)
@@ -141,7 +143,8 @@ def test():
 # check vae dir exists, if not, create it
 vae_dir = join(args.logdir, 'vae')
 if not exists(vae_dir):
-    mkdir(vae_dir)
+    # mkdir(vae_dir)
+    os.makedirs(vae_dir)
     mkdir(join(vae_dir, 'samples'))
 
 reload_file = join(vae_dir, 'best.tar')

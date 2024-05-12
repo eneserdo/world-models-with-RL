@@ -4,20 +4,25 @@ Generating data from the CarRacing gym environment.
 """
 import argparse
 from os.path import join, exists
-import gym
+# import gym
+import gymnasium as gym
 import numpy as np
+
+import sys
+sys.path.append('/home/cak/enes/world-models-with-RL')
 from utils.misc import sample_continuous_policy
 
 def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
     """ Generates data """
     assert exists(data_dir), "The data directory does not exist..."
 
-    env = gym.make("CarRacing-v0")
-    seq_len = 1000
+    env = gym.make("CarRacing-v2")
+    # seq_len = 1000
+    seq_len = env._max_episode_steps
 
     for i in range(rollouts):
-        env.reset()
-        env.env.viewer.window.dispatch_events()
+        s, _ = env.reset()
+        # env.env.viewer.window.dispatch_events()
         if noise_type == 'white':
             a_rollout = [env.action_space.sample() for _ in range(seq_len)]
         elif noise_type == 'brown':
@@ -27,13 +32,20 @@ def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
         r_rollout = []
         d_rollout = []
 
+        s_rollout += [s]
+
         t = 0
         while True:
             action = a_rollout[t]
             t += 1
 
-            s, r, done, _ = env.step(action)
-            env.env.viewer.window.dispatch_events()
+            # s, r, done, _ = env.step(action)
+            s, r, terminated, truncated, _ = env.step(action)
+            
+            # TODO: record them separately
+            done = terminated or truncated
+
+            # env.env.viewer.window.dispatch_events()
             s_rollout += [s]
             r_rollout += [r]
             d_rollout += [done]
