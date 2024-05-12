@@ -6,6 +6,7 @@ from tqdm import tqdm
 import torch
 import torch.utils.data
 import numpy as np
+import torchvision
 
 class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-public-methods
     def __init__(self, root, transform, buffer_size=200, train=True): # pylint: disable=too-many-arguments
@@ -108,6 +109,11 @@ class RolloutSequenceDataset(_RolloutDataset): # pylint: disable=too-few-public-
         obs_data = self._transform(obs_data.astype(np.float32))
         obs, next_obs = obs_data[:-1], obs_data[1:]
         action = data['actions'][seq_index+1:seq_index + self._seq_len + 1]
+        
+        # TODO: instead of 64 use a parameter
+        obs = torchvision.transforms.functional.resize(torch.from_numpy(obs), (64, 64))
+        next_obs = torchvision.transforms.functional.resize(torch.from_numpy(next_obs), (64, 64))
+
         action = action.astype(np.float32)
         reward, terminal = [data[key][seq_index+1:
                                       seq_index + self._seq_len + 1].astype(np.float32)

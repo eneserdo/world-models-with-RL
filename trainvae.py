@@ -1,5 +1,6 @@
 """ Training VAE """
 import argparse
+import os
 from os.path import join, exists
 from os import mkdir
 
@@ -9,6 +10,7 @@ from torch import optim
 from torch.nn import functional as F
 from torchvision import transforms
 from torchvision.utils import save_image
+import matplotlib.pyplot as plt
 
 from models.vae import VAE
 
@@ -30,6 +32,9 @@ parser.add_argument('--noreload', action='store_true',
 parser.add_argument('--nosamples', action='store_true',
                     help='Does not save samples during training if specified')
 
+parser.add_argument('--dataset_dir', type=str, help='Directory where dataset is stored')
+
+parser.add_argument('--verbose', action='store_true', help='chatty')
 
 args = parser.parse_args()
 cuda = torch.cuda.is_available()
@@ -56,9 +61,9 @@ transform_test = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-dataset_train = RolloutObservationDataset('datasets/carracing',
+dataset_train = RolloutObservationDataset(args.dataset_dir,
                                           transform_train, train=True)
-dataset_test = RolloutObservationDataset('datasets/carracing',
+dataset_test = RolloutObservationDataset(args.dataset_dir,
                                          transform_test, train=False)
 train_loader = torch.utils.data.DataLoader(
     dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=2)
@@ -68,6 +73,8 @@ test_loader = torch.utils.data.DataLoader(
 
 model = VAE(3, LSIZE).to(device)
 optimizer = optim.Adam(model.parameters())
+
+# TODO switch to pytorch's scheduler
 scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
 earlystopping = EarlyStopping('min', patience=30)
 
@@ -97,7 +104,15 @@ def save_reconstructed_images(original, recons, epoch_idx):
                join(args.logdir, 'reconstructed_' + str(epoch_idx) + '.png'), nrow=N)
     
     
+train_losses = []
+test_losses = []
 
+def vis_losses(train_losses, test_losses, save_path):
+    plt.figure()
+    plt.plot(train_losses, label='train loss')
+    plt.plot(test_losses, label='test loss')
+    plt.legend()
+    plt.savefig(save_path)
 
 def train(epoch):
     """ One training epoch """
@@ -108,19 +123,24 @@ def train(epoch):
         data = data.to(device)
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
-        # save_reconstructed_images(data, recon_batch, epoch)
+        save_reconstructed_images(data, recon_batch, epoch)
         loss = loss_function(recon_batch, data, mu, logvar)
         loss.backward()
         train_loss += loss.item()
         optimizer.step()
         if batch_idx % 20 == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader),
-                loss.item() / len(data)))
+            if args.verbose:
+                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    epoch, batch_idx * len(data), len(train_loader.dataset),
+                    100. * batch_idx / len(train_loader),
+                    loss.item() / len(data)))
 
-    print('====> Epoch: {} Average loss: {:.4f}'.format(
-        epoch, train_loss / len(train_loader.dataset)))
+
+    if args.verbose:
+        print('====> Epoch: {} Average loss: {:.4f}'.format(
+            epoch, train_loss / len(train_loader.dataset)))
+    
+    train_losses.append(train_loss / len(train_loader.dataset))
 
 
 def test():
@@ -135,13 +155,15 @@ def test():
             test_loss += loss_function(recon_batch, data, mu, logvar).item()
 
     test_loss /= len(test_loader.dataset)
-    print('====> Test set loss: {:.4f}'.format(test_loss))
+    if args.verbose:
+        print('====> Test set loss: {:.4f}'.format(test_loss))
     return test_loss
 
 # check vae dir exists, if not, create it
 vae_dir = join(args.logdir, 'vae')
 if not exists(vae_dir):
-    mkdir(vae_dir)
+    # mkdir(vae_dir)
+    os.makedirs(vae_dir)
     mkdir(join(vae_dir, 'samples'))
 
 reload_file = join(vae_dir, 'best.tar')
@@ -159,9 +181,27 @@ if not args.noreload and exists(reload_file):
 
 cur_best = None
 
+def progress_bar(current, total, msg=None):
+    """ Progress bar to keep track of training """
+    frac = current / total
+    filled_progbar = round(frac * 40)
+    print('\r', '█' * filled_progbar + '░' * (40 - filled_progbar),
+          '[{:>7.2%}]'.format(frac), end='')
+
+    if msg:
+        print(' - ' + msg, end='')
+
+    if current == total:
+        print()
+
+# TODO: improve training loop
 for epoch in range(1, args.epochs + 1):
+    progress_bar(epoch, args.epochs, msg='Epoch {}/{}'.format(epoch, args.epochs))
     train(epoch)
     test_loss = test()
+    
+    test_losses.append(test_loss)
+
     scheduler.step(test_loss)
     earlystopping.step(test_loss)
 
@@ -194,3 +234,6 @@ for epoch in range(1, args.epochs + 1):
     if earlystopping.stop:
         print("End of Training because of early stopping at epoch {}".format(epoch))
         break
+
+
+vis_losses(train_losses, test_losses, join(args.logdir, 'losses.png'))
