@@ -123,7 +123,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     env = SimulatedCarracing(args.logdir)
 
-    env.reset()
+    _, _ = env.reset()
     action = np.array([0., 0., 0.])
 
     def on_key_press(event):

@@ -91,7 +91,6 @@ def load_parameters(params, controller):
     for p, p_0 in zip(controller.parameters(), params):
         p.data.copy_(p_0)
 
-# FIXME
 class RolloutGenerator(object):
     """ Utility to generate rollouts.
 
@@ -102,7 +101,7 @@ class RolloutGenerator(object):
     :attr mdrnn: MDRNN model loaded from mdir/mdrnn
     :attr controller: Controller, either loaded from mdir/ctrl or randomly
         initialized
-    :attr env: instance of the CarRacing-v0 gym environment
+    :attr env: instance of the CarRacing-v2 gym environment
     :attr device: device used to run VAE, MDRNN and Controller
     :attr time_limit: rollouts have a maximum of time_limit timesteps
     """
@@ -178,10 +177,11 @@ class RolloutGenerator(object):
         if params is not None:
             load_parameters(params, self.controller)
 
-        obs = self.env.reset()
+        obs, _ = self.env.reset()
 
+        # TODO remove this: is this required ?
         # This first render is required !
-        self.env.render()
+        # self.env.render()
 
         hidden = [
             torch.zeros(1, RSIZE).to(self.device)
@@ -192,7 +192,12 @@ class RolloutGenerator(object):
         while True:
             obs = transform(obs).unsqueeze(0).to(self.device)
             action, hidden = self.get_action_and_transition(obs, hidden)
-            obs, reward, done, _ = self.env.step(action)
+            
+            # FIXME: Model dreamer ın içinde eğitilmiyor. Bu çalışma paper ın yalnızca bir kısmını içeriyor.
+
+            # obs, reward, done, _ = self.env.step(action)
+            obs, reward, terminated, truncated, _ = self.env.step(action)
+            done = terminated or truncated
 
             if render:
                 self.env.render()
