@@ -19,5 +19,6 @@ pip install -r requirements.txt
 
 - [ ] Train the model iteratively: Use the trained model's policy to generate data and train the MDN-RNN with the new generated data.
 
+- [ ] Train with alternative VAE architectures
 
 **NOTE**: Please check the README.md of the forked repo.
