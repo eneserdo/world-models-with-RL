@@ -15,7 +15,7 @@ class TestEnvs(unittest.TestCase):
     def test_simulated_carracing(self):
         """ Test simulated Car Racing """
         env = SimulatedCarracing('logs/exp0')
-        _, _ = env.reset()
+        env.reset()
         seq_len = 1000
         actions = sample_continuous_policy(
             env.action_space, seq_len, 1. / FPS)

@@ -5,9 +5,9 @@ import torch
 from torchvision import transforms
 import numpy as np
 from models import MDRNNCell, VAE, Controller
-# import gym
+import gym
 # import gym.envs.box2d
-import gymnasium as gym
+# import gymnasium as gym
 
 
 # A bit dirty: manually change size of car racing env
@@ -177,7 +177,7 @@ class RolloutGenerator(object):
         if params is not None:
             load_parameters(params, self.controller)
 
-        obs, _ = self.env.reset()
+        obs = self.env.reset()
 
         # TODO remove this: is this required ?
         # This first render is required !
@@ -195,9 +195,9 @@ class RolloutGenerator(object):
             
             # FIXME: Model dreamer ın içinde eğitilmiyor. Bu çalışma paper ın yalnızca bir kısmını içeriyor.
 
-            # obs, reward, done, _ = self.env.step(action)
-            obs, reward, terminated, truncated, _ = self.env.step(action)
-            done = terminated or truncated
+            obs, reward, done, _ = self.env.step(action)
+            # obs, reward, terminated, truncated, _ = self.env.step(action)
+            # done = terminated or truncated
 
             if render:
                 self.env.render()
