@@ -3,9 +3,9 @@ import torch
 from torchvision import transforms
 import numpy as np
 from models import MDRNNCell, VAE, Controller
-import gym
+# import gym
 # import gym.envs.box2d
-# import gymnasium as gym
+import gymnasium as gym
 
 
 # A bit dirty: manually change size of car racing env
@@ -112,7 +112,7 @@ class CustomEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         self.step_count = 0
-        obs = self.env.reset()
+        obs, _ = self.env.reset()
         obs = transform(obs).unsqueeze(0).to(self.device)
         _, z_vec, _ = self.vae(obs)
         return z_vec

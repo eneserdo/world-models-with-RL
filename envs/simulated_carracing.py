@@ -5,9 +5,9 @@ import argparse
 from os.path import join, exists
 import torch
 from torch.distributions.categorical import Categorical
-# import gymnasium as gym
-# from gymnasium import spaces
-import gym
+import gymnasium as gym
+from gymnasium import spaces
+# import gym
 
 
 import sys
@@ -36,8 +36,8 @@ class SimulatedCarracing(gym.Env): # pylint: disable=too-many-instance-attribute
         assert exists(rnn_file), "No MDRNN model in the directory..."
 
         # spaces
-        self.action_space = gym.spaces.Box(np.array([-1, 0, 0]), np.array([1, 1, 1]))
-        self.observation_space = gym.spaces.Box(low=0, high=255, shape=(RED_SIZE, RED_SIZE, 3),
+        self.action_space = spaces.Box(np.array([-1, 0, 0]), np.array([1, 1, 1]))
+        self.observation_space = spaces.Box(low=0, high=255, shape=(RED_SIZE, RED_SIZE, 3),
                                             dtype=np.uint8)
 
         # load VAE
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     env.figure.canvas.mpl_connect('key_press_event', on_key_press)
     env.figure.canvas.mpl_connect('key_release_event', on_key_release)
     while True:
-        _, _, done = env.step(action)
+        s, r, terminated, truncated, _ = env.step(action)
         env.render()
-        if done:
+        if terminated or truncated:
             break

@@ -4,8 +4,8 @@ Generating data from the CarRacing gym environment.
 """
 import argparse
 from os.path import join, exists
-import gym
-# import gymnasium as gym
+# import gym
+import gymnasium as gym
 import numpy as np
 
 import sys
@@ -21,7 +21,7 @@ def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
     seq_len = env._max_episode_steps
 
     for i in range(rollouts):
-        s = env.reset()
+        s, _ = env.reset()
         # env.env.viewer.window.dispatch_events()
         if noise_type == 'white':
             a_rollout = [env.action_space.sample() for _ in range(seq_len)]
@@ -42,9 +42,9 @@ def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
             action = a_rollout[t]
             t += 1
 
-            s, r, done, _ = env.step(action)
-            # s, r, terminated, truncated, _ = env.step(action)            
-            # done = terminated or truncated
+            # s, r, done, _ = env.step(action)
+            s, r, terminated, truncated, _ = env.step(action)            
+            done = terminated or truncated
 
             # env.env.viewer.window.dispatch_events()
             s_rollout += [s]
