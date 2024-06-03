@@ -3,6 +3,7 @@ import argparse
 from functools import partial
 from os.path import join, exists
 from os import mkdir
+from matplotlib import pyplot as plt
 import torch
 import torch.nn.functional as f
 from torch.utils.data import DataLoader
@@ -202,13 +203,33 @@ def data_pass(epoch, train, include_reward): # pylint: disable=too-many-locals
                                  gmm=cum_gmm / LSIZE / (i + 1), mse=cum_mse / (i + 1)))
         pbar.update(BSIZE)
     pbar.close()
-    return cum_loss * BSIZE / len(loader.dataset)
+
+    cum_loss = cum_loss * BSIZE / len(loader.dataset)
+    cum_bce = cum_bce * BSIZE / len(loader.dataset)
+    cum_gmm = cum_gmm * BSIZE / len(loader.dataset) / LSIZE
+    cum_mse = cum_mse * BSIZE / len(loader.dataset)
+
+    if train:
+        train_losses['loss'].append(cum_loss)
+        train_losses['bce'].append(cum_bce)
+        train_losses['gmm'].append(cum_gmm)
+        train_losses['mse'].append(cum_mse)
+    else:
+        test_losses['loss'].append(cum_loss)
+        test_losses['bce'].append(cum_bce)
+        test_losses['gmm'].append(cum_gmm)
+        test_losses['mse'].append(cum_mse)
+
+    return cum_loss
 
 
 train = partial(data_pass, train=True, include_reward=args.include_reward)
 test = partial(data_pass, train=False, include_reward=args.include_reward)
 
 cur_best = None
+train_losses = {"bce": [], "gmm": [], "mse": [], "loss": []}
+test_losses = {"bce": [], "gmm": [], "mse": [], "loss": []}
+
 for e in range(epochs):
     train(e)
     test_loss = test(e)
@@ -231,3 +252,43 @@ for e in range(epochs):
     if earlystopping.stop:
         print("End of Training because of early stopping at epoch {}".format(e))
         break
+
+
+plt.figure()
+
+plt.subplot(2, 2, 1)
+plt.plot(train_losses['loss'], label='train')
+plt.plot(test_losses['loss'], label='test')
+plt.title('Loss')
+plt.legend()
+
+plt.subplot(2, 2, 2)
+plt.plot(train_losses['bce'], label='train')
+plt.plot(test_losses['bce'], label='test')
+plt.title('BCE')
+plt.legend()
+
+plt.subplot(2, 2, 3)
+plt.plot(train_losses['gmm'], label='train')
+plt.plot(test_losses['gmm'], label='test')
+plt.title('GMM')
+plt.legend()
+
+plt.subplot(2, 2, 4)
+plt.plot(train_losses['mse'], label='train')
+plt.plot(test_losses['mse'], label='test')
+plt.title('MSE')
+plt.legend()
+
+plt.savefig(join(args.logdir, 'mdnrnn_loss_curve.png'))
+
+# Save the losses
+np.savez(join(args.logdir, 'mdnrnn_losses.npz'),
+         train_bce= np.array(train_losses['bce']),
+         train_gmm=np.array(train_losses['gmm']),
+         train_mse=np.array(train_losses['mse']),
+         train_loss=np.array(train_losses['loss']),
+         test_bce=np.array(test_losses['bce']),
+         test_gmm=np.array(test_losses['gmm']),
+         test_mse=np.array(test_losses['mse']),
+         test_loss=np.array(test_losses['loss']))
