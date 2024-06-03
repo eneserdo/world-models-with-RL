@@ -66,9 +66,9 @@ dataset_train = RolloutObservationDataset(args.dataset_dir,
 dataset_test = RolloutObservationDataset(args.dataset_dir,
                                          transform_test, train=False)
 train_loader = torch.utils.data.DataLoader(
-    dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=2)
+    dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=2, drop_last=True)
 test_loader = torch.utils.data.DataLoader(
-    dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=2)
+    dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=2, drop_last=True)
 
 
 model = VAE(3, LSIZE).to(device)
