@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "models/vae.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "models/vae.py",
+            "console": "integratedTerminal"
+        },
+        // python trainvae.py --logdir exp_dir
+        {
+            "name": "trainvae",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "trainvae.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--logdir",
+                "exp_dir_car",
+                "--dataset_dir",
+                "datasets/carracing",
+            ]
+        },
+        {
+            // python traincontroller.py --logdir exp_dir_car --n-samples 4 --pop-size 4 --target-return 950 
+            "name": "traincontroller",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "traincontroller.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--logdir",
+                "exp_dir_car",
+                "--n-samples",
+                "4",
+                "--pop-size",
+                "4",
+                "--target-return",
+                "950",
+                "--display"
+            ]
+        },
+    ]
+}
