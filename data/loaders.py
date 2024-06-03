@@ -9,7 +9,7 @@ import numpy as np
 import torchvision
 
 class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-public-methods
-    def __init__(self, root, transform, buffer_size=200, train=True): # pylint: disable=too-many-arguments
+    def __init__(self, root, transform, buffer_size=200, train=True, data_set_split_ratio=0.9): # pylint: disable=too-many-arguments
         self._transform = transform
 
         self._files = [
@@ -18,10 +18,11 @@ class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-publi
             for ssd in listdir(join(root, sd))]
 
         # FIXME: no hardcoded train/test split
+        data_length = len(self._files)
         if train:
-            self._files = self._files[:-600]
+            self._files = self._files[:int(data_length * data_set_split_ratio)]
         else:
-            self._files = self._files[-600:]
+            self._files = self._files[int(data_length * data_set_split_ratio):]
 
         self._cum_size = None
         self._buffer = None
@@ -70,7 +71,7 @@ class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-publi
     def _data_per_sequence(self, data_length):
         pass
 
-
+## RNN
 class RolloutSequenceDataset(_RolloutDataset): # pylint: disable=too-few-public-methods
     """ Encapsulates rollouts.
 
@@ -125,6 +126,7 @@ class RolloutSequenceDataset(_RolloutDataset): # pylint: disable=too-few-public-
     def _data_per_sequence(self, data_length):
         return data_length - self._seq_len
 
+## VAE
 class RolloutObservationDataset(_RolloutDataset): # pylint: disable=too-few-public-methods
     """ Encapsulates rollouts.
 

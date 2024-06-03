@@ -53,7 +53,7 @@ class CustomEnv(gym.Env):
         # # Example when using discrete actions:
         self.action_space = self.env.action_space
         # # Example for using image as input (channel-first; channel-last also works):
-        self.observation_space = self.env.observation_space
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(32,), dtype=np.float32)
 
         vae_file, rnn_file, ctrl_file = \
             [join(mdir, m, 'best.tar') for m in ['vae', 'mdrnn', 'ctrl']]
@@ -92,30 +92,37 @@ class CustomEnv(gym.Env):
 
         self.hidden = [torch.zeros(1, RSIZE).to(self.device) for _ in range(2)]
         self.step_count = 0 
+        self.z_vec = None
+        self.z_vec_next = None
 
     def step(self, action):
         self.step_count += 1
 
-        mus, sigmas, logpi, r, d, next_hidden = self.mdrnn(action, z_vec, hidden)
+        mus, sigmas, logpi, r, d, self.next_hidden = self.mdrnn(action, self.z_vec, self.hidden)
         
-        z_vec_next = get_z_vector(mus, sigmas, logpi)
+        self.z_vec_next = get_z_vector(mus, sigmas, logpi)
 
         action = action.squeeze().cpu().numpy()
-        hidden = next_hidden
-        z_vec = z_vec_next
+        self.hidden = self.next_hidden
+        self.z_vec = self.z_vec_next
         reward = r.squeeze().cpu().numpy()
         done = d.squeeze().cpu().numpy()
 
-        observation, reward, terminated, truncated, info = z_vec, reward, done, self.step_count >= self.time_limit, {}
+        observation, reward, terminated, truncated, info = self.z_vec, reward, done, self.step_count >= self.time_limit, {}
 
         return observation, reward, terminated, truncated, info
 
-    def reset(self, seed=None, options=None):
+    def reset(self, seed=None, options=None, num_empty_actions=10):
         self.step_count = 0
         obs, _ = self.env.reset()
+        for _ in range(num_empty_actions):
+            obs, _, _, _, _ = self.env.step(np.zeros(3))
         obs = transform(obs).unsqueeze(0).to(self.device)
         _, z_vec, _ = self.vae(obs)
-        return z_vec
+        self.hidden = [torch.zeros(1, RSIZE).to(self.device) for _ in range(2)]
+        # to numpy array
+        self.z_vec = z_vec.detach().squeeze().cpu().numpy()
+        return self.z_vec, {}
 
     def render(self):
         sample = self.vae.decoder(sample).cpu()

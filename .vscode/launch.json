@@ -26,6 +26,28 @@
             ]
         },
         {
+            "name": "trainmdrnn",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "trainmdrnn.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--logdir",
+                "log",
+                "--dataset_dir",
+                "datasets/carracing",
+                "--include_reward",
+            ]
+        },
+        {
+            "name": "train_rlagent",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "train_rlagent.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             // python traincontroller.py --logdir exp_dir_car --n-samples 4 --pop-size 4 --target-return 950 
             "name": "traincontroller",
             "type": "debugpy",
