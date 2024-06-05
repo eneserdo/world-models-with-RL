@@ -21,7 +21,7 @@ def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
     seq_len = env._max_episode_steps
 
     for i in range(rollouts):
-        s, _ = env.reset()
+        env.reset()
         # env.env.viewer.window.dispatch_events()
         if noise_type == 'white':
             a_rollout = [env.action_space.sample() for _ in range(seq_len)]
@@ -34,8 +34,6 @@ def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
         s_rollout = []
         r_rollout = []
         d_rollout = []
-
-        s_rollout += [s]
 
         t = 0
         while True:
