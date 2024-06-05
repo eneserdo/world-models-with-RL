@@ -83,7 +83,11 @@ class EnlargedDecoder(nn.Module):
         # self.deconv4 = nn.ConvTranspose2d(32, img_channels, 6, stride=2)
 
         layers = [
-            nn.ConvTranspose2d(out_f1, 128, 4, stride=2),
+            nn.ConvTranspose2d(out_f1, 256, 4, stride=2),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(),
+
+            nn.ConvTranspose2d(256, 128, 4, stride=2),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(),
 
@@ -91,7 +95,7 @@ class EnlargedDecoder(nn.Module):
             nn.BatchNorm2d(64),
             nn.LeakyReLU(),
 
-            nn.ConvTranspose2d(64, 32, 4, stride=2),
+            nn.ConvTranspose2d(64, 32, 4, stride=2, output_padding=1),
             nn.BatchNorm2d(32),
             nn.LeakyReLU(),
 
@@ -195,6 +199,7 @@ class VAE(nn.Module):
             self.encoder = EnlargedEncoder(img_channels, latent_size, img_size)
             self.decoder = EnlargedDecoder(img_channels, latent_size, img_size)
         elif img_size == 160:
+            raise ValueError("Not implemented yet")
             self.encoder = EnlargedEncoder(img_channels, latent_size, img_size)
             self.decoder = EnlargedDecoder(img_channels, latent_size, img_size)
         else:
@@ -209,3 +214,11 @@ class VAE(nn.Module):
 
         recon_x = self.decoder(z)
         return recon_x, mu, logsigma
+
+
+# if __name__ == "__main__":
+#     # Test the model
+#     vae = VAE(3, 32, 96)
+#     x = torch.randn(10, 3, 96, 96)
+#     recon_x, mu, logsigma = vae(x)
+#     print(recon_x.shape, mu.shape, logsigma.shape)
