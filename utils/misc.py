@@ -15,7 +15,7 @@ import gymnasium as gym
 
 # Action, latent, recurrent
 ASIZE, LSIZE, RSIZE, RED_SIZE, SIZE =\
-    3, 32, 256, 64, 64
+    3, 32, 256, 96, 96
 
 # Same
 transform = transforms.Compose([

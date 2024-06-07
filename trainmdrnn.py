@@ -13,8 +13,6 @@ from tqdm import tqdm
 from utils.misc import save_checkpoint
 from utils.misc import ASIZE, LSIZE, RSIZE, RED_SIZE, SIZE
 from utils.learning import EarlyStopping
-## WARNING : THIS SHOULD BE REPLACED WITH PYTORCH 0.5
-from utils.learning import ReduceLROnPlateau
 
 from data.loaders import RolloutSequenceDataset
 from models.vae import VAE
@@ -34,10 +32,12 @@ args = parser.parse_args()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+assert args.include_reward, "Reward is not included. Are you sure?"
+
 # constants
-BSIZE = 16
+BSIZE = 32
 SEQ_LEN = 32
-epochs = 30
+epochs = 100
 
 # Loading VAE
 vae_file = join(args.logdir, 'vae', 'best.tar')
@@ -47,7 +47,7 @@ print("Loading VAE at epoch {} "
       "with test error {}".format(
           state['epoch'], state['precision']))
 
-vae = VAE(3, LSIZE).to(device)
+vae = VAE(3, LSIZE, img_size=96).to(device)
 vae.load_state_dict(state['state_dict'])
 
 # Loading model
@@ -59,8 +59,9 @@ if not exists(rnn_dir):
 
 mdrnn = MDRNN(LSIZE, ASIZE, RSIZE, 5)
 mdrnn.to(device)
-optimizer = torch.optim.RMSprop(mdrnn.parameters(), lr=1e-3, alpha=.9)
-scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
+# optimizer = torch.optim.RMSprop(mdrnn.parameters(), lr=1e-3, alpha=.9)
+optimizer = torch.optim.Adam(mdrnn.parameters(), lr=1e-3)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
 earlystopping = EarlyStopping('min', patience=30)
 
 
@@ -104,10 +105,14 @@ def to_latent(obs, next_obs):
         - next_latent_obs: 4D torch tensor (BSIZE, SEQ_LEN, LSIZE)
     """
     with torch.no_grad():
-        obs, next_obs = [
-            f.upsample(x.view(-1, 3, SIZE, SIZE), size=RED_SIZE,
-                       mode='bilinear', align_corners=True)
-            for x in (obs, next_obs)]
+        # Since we are working with original size now, no need to resize
+        # TODO: make it parametric
+        # obs, next_obs = [
+        #     f.upsample(x.view(-1, 3, SIZE, SIZE), size=RED_SIZE,
+        #                mode='bilinear', align_corners=True)
+        #     for x in (obs, next_obs)]
+        obs = obs.view(-1, 3, SIZE, SIZE)
+        next_obs = next_obs.view(-1, 3, SIZE, SIZE)
 
         (obs_mu, obs_logsigma), (next_obs_mu, next_obs_logsigma) = [
             vae(x)[1:] for x in (obs, next_obs)]
@@ -280,10 +285,12 @@ plt.plot(test_losses['mse'], label='test')
 plt.title('MSE')
 plt.legend()
 
-plt.savefig(join(args.logdir, 'mdnrnn_loss_curve.png'))
+save_dir = join(args.logdir, "mdrnn")
+
+plt.savefig(join(save_dir, 'mdnrnn_loss_curve.png'))
 
 # Save the losses
-np.savez(join(args.logdir, 'mdnrnn_losses.npz'),
+np.savez(join(save_dir, 'mdnrnn_losses.npz'),
          train_bce= np.array(train_losses['bce']),
          train_gmm=np.array(train_losses['gmm']),
          train_mse=np.array(train_losses['mse']),

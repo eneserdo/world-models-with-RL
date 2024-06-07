@@ -112,8 +112,11 @@ class RolloutSequenceDataset(_RolloutDataset): # pylint: disable=too-few-public-
         action = data['actions'][seq_index+1:seq_index + self._seq_len + 1]
         
         # TODO: instead of 64 use a parameter
-        obs = torchvision.transforms.functional.resize(torch.from_numpy(obs), (64, 64))
-        next_obs = torchvision.transforms.functional.resize(torch.from_numpy(next_obs), (64, 64))
+        # obs = torchvision.transforms.functional.resize(torch.from_numpy(obs), (64, 64))
+        # next_obs = torchvision.transforms.functional.resize(torch.from_numpy(next_obs), (64, 64))
+        obs = torch.from_numpy(obs)
+        next_obs = torch.from_numpy(next_obs)
+
 
         action = action.astype(np.float32)
         reward, terminal = [data[key][seq_index+1:

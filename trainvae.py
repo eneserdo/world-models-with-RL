@@ -4,6 +4,7 @@ import os
 from os.path import join, exists
 from os import mkdir
 
+import numpy as np
 import torch
 import torch.utils.data
 from torch import optim
@@ -71,11 +72,12 @@ test_loader = torch.utils.data.DataLoader(
     dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=2, drop_last=True)
 
 
-model = VAE(3, LSIZE).to(device)
+model = VAE(3, LSIZE, img_size=RED_SIZE).to(device)
 optimizer = optim.Adam(model.parameters())
 
-# TODO switch to pytorch's scheduler
-scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
+
+# scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
 earlystopping = EarlyStopping('min', patience=30)
 
 # Reconstruction + KL divergence losses summed over all elements and batch
@@ -91,6 +93,8 @@ def loss_function(recon_x, x, mu, logsigma):
     return BCE + KLD
 
 
+os.makedirs(join(args.logdir, "vae", 'reconstructed'), exist_ok=True)
+
 def save_reconstructed_images(original, recons, epoch_idx):
     # save the original and recontructed images side by side
     N=10
@@ -101,7 +105,7 @@ def save_reconstructed_images(original, recons, epoch_idx):
     
     # CHECKME:  # maybe add 0.5 bc save_image expects image in [-0.5, +0.5]
     save_image(comparison.cpu(),
-               join(args.logdir, 'reconstructed_' + str(epoch_idx) + '.png'), nrow=N)
+               join(args.logdir, "vae", "reconstructed", 'reconstructed_' + str(epoch_idx) + '.png'), nrow=N)
     
     
 train_losses = []
@@ -109,10 +113,18 @@ test_losses = []
 
 def vis_losses(train_losses, test_losses, save_path):
     plt.figure()
+    plt.title('VAE')
     plt.plot(train_losses, label='train loss')
     plt.plot(test_losses, label='test loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
     plt.legend()
-    plt.savefig(save_path)
+    plt.savefig(join(save_path, 'vae_losses.png'))
+    plt.close()
+
+    np.savez(join(save_path, 'vae_losses.npz'),
+             train_losses=train_losses, test_losses=test_losses) 
+
 
 def train(epoch):
     """ One training epoch """
@@ -164,6 +176,8 @@ vae_dir = join(args.logdir, 'vae')
 if not exists(vae_dir):
     # mkdir(vae_dir)
     os.makedirs(vae_dir)
+
+if not exists(join(vae_dir, 'samples')):
     mkdir(join(vae_dir, 'samples'))
 
 reload_file = join(vae_dir, 'best.tar')
@@ -225,10 +239,10 @@ for epoch in range(1, args.epochs + 1):
 
     if not args.nosamples:
         with torch.no_grad():
-            # FIXME: RED_SIZE hem bacth size hem de img size olarak kullanılmış
-            sample = torch.randn(RED_SIZE, LSIZE).to(device) # RED_SIZE = 64, LSIZE = 32, 
+            num_of_samples = 64
+            sample = torch.randn(num_of_samples, LSIZE).to(device)
             sample = model.decoder(sample).cpu()
-            save_image(sample.view(64, 3, RED_SIZE, RED_SIZE), # Buna gerek olmamalı?
+            save_image(sample.view(64, 3, RED_SIZE, RED_SIZE), #CHECKME Buna gerek olmamalı?
                        join(vae_dir, 'samples/sample_' + str(epoch) + '.png'))
 
     if earlystopping.stop:
@@ -236,4 +250,4 @@ for epoch in range(1, args.epochs + 1):
         break
 
 
-vis_losses(train_losses, test_losses, join(args.logdir, 'losses.png'))
+vis_losses(train_losses, test_losses, join(args.logdir, "vae"))
