@@ -153,12 +153,12 @@ class EnlargedEncoder(nn.Module):
         if img_size == 160:
             last.append(nn.Conv2d(256, 256, 4, stride=2))
             last.append(nn.BatchNorm2d(256))
-            last.append(nn.LeakyReLU())
+            last.append(nn.Tanh())
         
         elif img_size == 96:
             last.append(nn.Conv2d(256, 256, 4, stride=1))
             last.append(nn.BatchNorm2d(256))
-            last.append(nn.LeakyReLU())
+            last.append(nn.Tanh())
 
 
 
@@ -189,7 +189,7 @@ class EnlargedEncoder(nn.Module):
 
 class VAE(nn.Module):
     """ Variational Autoencoder """
-    def __init__(self, img_channels, latent_size, img_size=64):
+    def __init__(self, img_channels, latent_size, img_size):
         super(VAE, self).__init__()
 
         if img_size == 64:
