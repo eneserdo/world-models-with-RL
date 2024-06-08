@@ -158,7 +158,7 @@ class EnlargedEncoder(nn.Module):
         elif img_size == 96:
             last.append(nn.Conv2d(256, 256, 4, stride=1))
             last.append(nn.BatchNorm2d(256))
-            last.append(nn.Tanh())
+            last.append(nn.ReLU())
 
 
 

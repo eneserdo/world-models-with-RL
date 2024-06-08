@@ -7,7 +7,7 @@ from models import MDRNNCell, VAE, Controller
 # import gym
 # import gym.envs.box2d
 import gymnasium as gym
-from utils.misc import RED_SIZE, LSIZE, RSIZE
+from utils.misc import RED_SIZE, LSIZE, RSIZE, ASIZE
 # A bit dirty: manually change size of car racing env
 # gym.envs.box2d.car_racing.STATE_W, gym.envs.box2d.car_racing.STATE_H = 64, 64
 

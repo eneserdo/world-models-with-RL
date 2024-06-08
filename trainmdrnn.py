@@ -32,10 +32,10 @@ args = parser.parse_args()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-assert args.include_reward, "Reward is not included. Are you sure?"
+# assert args.include_reward, "Reward is not included. Are you sure?"
 
 # constants
-BSIZE = 32
+BSIZE = 16
 SEQ_LEN = 32
 epochs = 100
 
@@ -59,8 +59,8 @@ if not exists(rnn_dir):
 
 mdrnn = MDRNN(LSIZE, ASIZE, RSIZE, 5)
 mdrnn.to(device)
-# optimizer = torch.optim.RMSprop(mdrnn.parameters(), lr=1e-3, alpha=.9)
-optimizer = torch.optim.Adam(mdrnn.parameters(), lr=1e-3)
+optimizer = torch.optim.RMSprop(mdrnn.parameters(), lr=1e-3, alpha=.9)
+# optimizer = torch.optim.Adam(mdrnn.parameters(), lr=1e-3)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
 earlystopping = EarlyStopping('min', patience=30)
 
@@ -160,6 +160,49 @@ def get_loss(latent_obs, action, reward, terminal,
     loss = (gmm + bce + mse) / scale
     return dict(gmm=gmm, bce=bce, mse=mse, loss=loss)
 
+def save_losses():
+    plt.figure()
+
+    plt.subplot(2, 2, 1)
+    plt.plot(train_losses['loss'], label='train')
+    plt.plot(test_losses['loss'], label='test')
+    plt.title('Loss')
+    plt.legend()
+
+    plt.subplot(2, 2, 2)
+    plt.plot(train_losses['bce'], label='train')
+    plt.plot(test_losses['bce'], label='test')
+    plt.title('BCE')
+    plt.legend()
+
+    plt.subplot(2, 2, 3)
+    plt.plot(train_losses['gmm'], label='train')
+    plt.plot(test_losses['gmm'], label='test')
+    plt.title('GMM')
+    plt.legend()
+
+    plt.subplot(2, 2, 4)
+    plt.plot(train_losses['mse'], label='train')
+    plt.plot(test_losses['mse'], label='test')
+    plt.title('MSE')
+    plt.legend()
+
+    plt.tight_layout()
+
+    save_dir = join(args.logdir, "mdrnn")
+
+    plt.savefig(join(save_dir, 'mdnrnn_loss_curve.png'))
+
+    # Save the losses
+    np.savez(join(save_dir, 'mdnrnn_losses.npz'),
+            train_bce= np.array(train_losses['bce']),
+            train_gmm=np.array(train_losses['gmm']),
+            train_mse=np.array(train_losses['mse']),
+            train_loss=np.array(train_losses['loss']),
+            test_bce=np.array(test_losses['bce']),
+            test_gmm=np.array(test_losses['gmm']),
+            test_mse=np.array(test_losses['mse']),
+            test_loss=np.array(test_losses['loss']))
 
 def data_pass(epoch, train, include_reward): # pylint: disable=too-many-locals
     """ One pass through the data """
@@ -190,6 +233,9 @@ def data_pass(epoch, train, include_reward): # pylint: disable=too-many-locals
 
             optimizer.zero_grad()
             losses['loss'].backward()
+
+            torch.nn.utils.clip_grad_norm_(mdrnn.parameters(), 1)
+
             optimizer.step()
         else:
             with torch.no_grad():
@@ -258,44 +304,4 @@ for e in range(epochs):
         print("End of Training because of early stopping at epoch {}".format(e))
         break
 
-
-plt.figure()
-
-plt.subplot(2, 2, 1)
-plt.plot(train_losses['loss'], label='train')
-plt.plot(test_losses['loss'], label='test')
-plt.title('Loss')
-plt.legend()
-
-plt.subplot(2, 2, 2)
-plt.plot(train_losses['bce'], label='train')
-plt.plot(test_losses['bce'], label='test')
-plt.title('BCE')
-plt.legend()
-
-plt.subplot(2, 2, 3)
-plt.plot(train_losses['gmm'], label='train')
-plt.plot(test_losses['gmm'], label='test')
-plt.title('GMM')
-plt.legend()
-
-plt.subplot(2, 2, 4)
-plt.plot(train_losses['mse'], label='train')
-plt.plot(test_losses['mse'], label='test')
-plt.title('MSE')
-plt.legend()
-
-save_dir = join(args.logdir, "mdrnn")
-
-plt.savefig(join(save_dir, 'mdnrnn_loss_curve.png'))
-
-# Save the losses
-np.savez(join(save_dir, 'mdnrnn_losses.npz'),
-         train_bce= np.array(train_losses['bce']),
-         train_gmm=np.array(train_losses['gmm']),
-         train_mse=np.array(train_losses['mse']),
-         train_loss=np.array(train_losses['loss']),
-         test_bce=np.array(test_losses['bce']),
-         test_gmm=np.array(test_losses['gmm']),
-         test_mse=np.array(test_losses['mse']),
-         test_loss=np.array(test_losses['loss']))
+    save_losses()
