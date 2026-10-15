@@ -10,3 +10,8 @@ dock_config.json
 
 log*/*
 exp*/*
+
+.pytest_cache/
+__pycache__/
+*.pyc
+
