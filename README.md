@@ -22,3 +22,8 @@ pip install -r requirements.txt
 - [ ] Train with alternative VAE architectures
 
 **NOTE**: Please check the README.md of the forked repo.
+
+## Development
+
+`make test` runs the path-resolution tests used by the evaluation scripts; the training entry points
+need a GPU and the generated dataset.

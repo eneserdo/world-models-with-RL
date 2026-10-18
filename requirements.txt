@@ -1,3 +1,4 @@
+# Install with the CUDA build that matches the driver on the training host
 cma
 argparse
 # gym[all]==0.10.8
