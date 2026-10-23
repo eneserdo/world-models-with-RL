@@ -2,16 +2,17 @@
 import argparse
 from os.path import join, exists
 from utils.misc import RolloutGenerator
+from utils.paths import PathResolutionError, resolve_ctrl_file
 import torch
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--logdir', type=str, help='Where models are stored.')
 args = parser.parse_args()
 
-ctrl_file = join(args.logdir, 'ctrl', 'best.tar')
-
-assert exists(ctrl_file),\
-    "Controller was not trained..."
+try:
+    ctrl_file = resolve_ctrl_file(args.logdir)
+except PathResolutionError as exc:
+    raise SystemExit(f"error: {exc}")
 
 device = torch.device('cpu')
 
